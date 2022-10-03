@@ -37,6 +37,7 @@
  */
 
 #include <spinlock.h>
+#include <filetable.h>
 
 struct addrspace;
 struct thread;
@@ -71,7 +72,7 @@ struct proc {
 	/* VFS */
 	struct vnode *p_cwd;		/* current working directory */
 
-	struct filetable *files; 	/* files table */
+	filetable *files; 			/* files table */
 
 	/* add more material here as needed */
 };

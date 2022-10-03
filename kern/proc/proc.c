@@ -48,6 +48,7 @@
 #include <current.h>
 #include <addrspace.h>
 #include <vnode.h>
+#include <filetable.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -62,7 +63,7 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
-	struct filetable *ft;
+	filetable *ft;
 
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
@@ -84,11 +85,8 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	/* File table fields*/
-	ft = kmalloc(sizeof(*ft));
-	if (proc == NULL) {
-		return NULL;
-	}
-	if (0 == ft_init (ft)) {
+	ft = ft_create();
+	if (ft_init (ft) != 0) {
 		return NULL;
 	}
 	proc->files = ft;
