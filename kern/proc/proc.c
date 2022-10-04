@@ -63,7 +63,6 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
-	filetable *ft;
 
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
@@ -85,11 +84,12 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	/* File table fields*/
+	filetable *ft;
 	ft = ft_create();
 	if (ft_init (ft) != 0) {
-		return NULL;
+		panic("ft_init for kproc failed\n");
 	}
-	proc->files = ft;
+	kproc->files = ft;
 
 	return proc;
 }

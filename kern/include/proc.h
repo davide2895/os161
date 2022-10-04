@@ -42,7 +42,6 @@
 struct addrspace;
 struct thread;
 struct vnode;
-struct filetable;
 
 /*
  * Process structure.
