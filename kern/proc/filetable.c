@@ -1,251 +1,215 @@
+#include <syscall.h>
 #include <types.h>
+#include <vnode.h>
+#include <vfs.h>
+#include <proc.h>
+#include <copyinout.h>
 #include <kern/errno.h>
 #include <kern/fcntl.h>
-#include <kern/seek.h>
-#include <kern/unistd.h>
-#include <filetable.h>
-#include <lib.h>
-#include <vfs.h>
-#include <vnode.h>
+#include <kern/limits.h>    //contains limits for strings, etc.
+#include <uio.h>
+#include <kern/iovec.h>
+#include <file.h>
+#include <current.h>
 #include <synch.h>
+#include <stat.h>
 
-struct filetable *
-ft_create (void)
-{
+struct filetable *filetable_init(void){
+	struct filetable *ft;
 
-	int i;
-        struct filetable *ft = NULL;
+    /*  Makes shure that the process isn't pointing to a filetable already */
+    //KASSERT(ft == NULL);	//not sure of keeping this
 
-        ft = (struct filetable *)kmalloc(sizeof(struct filetable));
-        KASSERT(ft != NULL);
 
-	for (i = 0; i < MAX_FILES; i++) {
-		ft -> handles[i] = NULL;
+    ft = kmalloc(sizeof(struct filetable));
+	KASSERT(ft != NULL );	//This function returns a filetable type, it cannot return integers such as errors
+
+	/* filetable lock initialization and entries cleaning */
+	ft->ft_lock = lock_create("ft_lock");
+	if (ft->ft_lock == NULL){
+		kfree(ft);
+	}
+	KASSERT(ft->ft_lock != NULL );
+
+    for (int fd = 0; fd < __OPEN_MAX; fd++) {
+		ft->op_ptr[fd] = NULL;
 	}
 
-        ft -> last = 0;
-	ft -> lock = lock_create("filetable");
+	ft_STD_init(ft);
 
-        return (ft);
-
+	return ft;
 }
 
-int
-ft_init (struct filetable *ft)
-{
+void ft_STD_init(struct filetable *ft){
+	int result;
+	char buf1[] = {'c', 'o', 'n', ':', '\0'};
+	char buf2[] = {'c', 'o', 'n', ':', '\0'};
+	char buf3[] = {'c', 'o', 'n', ':', '\0'};
+	//struct filetable *ft = curproc->p_filetable; 
 
-        struct vnode *v = NULL;
-	openfile *fd_IN = NULL;
-	openfile *fd_OUT = NULL;
-	openfile *fd_ERR = NULL;
-	char *con1 = NULL;
-	char *con2 = NULL;
-	char *con3 = NULL;
-        int result;
+	/* STIN attached to con:, with fd = 0 */
+	//result = file_open(buf, O_CREAT|O_RDONLY, 0, NULL);
+	result = file_open(buf1, O_RDONLY, 0, NULL, ft);
 
-        KASSERT(ft != NULL);
+	if ( result ) {
+		kfree(ft);
+	}
+	KASSERT(result == 0);
 
-        // STDIN //
+	/* STOUT and STDERR attached to con:, with fd = 1, 2, respectively*/
+	//result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
+	result = file_open(buf2, O_WRONLY, 0, NULL, ft);
 
-        fd_IN = (openfile *)kmalloc(sizeof(openfile));
-        KASSERT(fd_IN != NULL);
+	if ( result ) {
+		kfree(ft);
+	}
+	KASSERT(result == 0);
 
-	con1 = kstrdup("con:");
-        result = vfs_open(con1, O_RDONLY, 0, &v);
-        if (result) {
-                vfs_close(v);
-                ft_destroy(ft);
-                return (-1);
-        }
-        fd_IN -> vn = v;
-        fd_IN -> offset = 0;
-        fd_IN -> mode = O_RDONLY;
-        fd_IN -> refs = 0;
-        fd_IN -> lock = lock_create("stdin");
-        ft_add(ft, fd_IN, 1, NULL);
+	//result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
+	result = file_open(buf3, O_WRONLY, 0, NULL, ft);
 
-        // STDOUT //
-
-        fd_OUT = (openfile *)kmalloc(sizeof(openfile));
-        KASSERT(fd_OUT != NULL);
-
-	con2 = kstrdup("con:");
-        result = vfs_open(con2, O_WRONLY, 0, &v);
-        if (result) {
-                vfs_close(v);
-                ft_destroy(ft);
-                return (-1);
-        }
-        fd_OUT -> vn = v;
-        fd_OUT -> offset = 0;
-        fd_OUT -> mode = O_WRONLY;
-        fd_OUT -> refs = 0;
-        fd_OUT -> lock = lock_create("stdout");
-        ft_add(ft, fd_OUT, 1, NULL);
-
-        // STDERR
-
-        fd_ERR = (openfile *)kmalloc(sizeof(openfile));
-        KASSERT(fd_ERR != NULL);
-
-	con3 = kstrdup("con:");
-        result = vfs_open(con3, O_WRONLY, 0, &v);
-        if (result) {
-                vfs_close(v);
-                ft_destroy(ft);
-                return (-1);
-        }
-        fd_ERR -> vn = v;
-        fd_ERR -> offset = 0;
-        fd_ERR -> mode = O_WRONLY;
-        fd_ERR -> refs = 0;
-        fd_ERR -> lock = lock_create("stderr");
-        ft_add(ft, fd_ERR, 1, NULL);
-
-	kfree(con1); kfree(con2); kfree(con3);
-        return (0);
-
+	if ( result ) {
+		kfree(ft);
+	}
+	KASSERT(result == 0);
 }
 
-int
-ft_add (struct filetable *ft, openfile *file, int init, int *err)
-{
+int file_open(char *filename, int flags, int mode, int *retfd, struct filetable *ft){
+    struct vnode *vn;
+	struct openfile *file;
+	struct stat info;
+	int result;
 
-	unsigned int cntr;
+	//kprintf("Print filename: %s\n", filename);
 
-        KASSERT(ft != NULL);
-	KASSERT(file != NULL);
-
-	if (init == 0) { ft_init(ft); }
-
-	lock_acquire(ft -> lock);
-
-	cntr = 0;
-	while (ft -> handles[ft -> last] != NULL) {
-
-		ft -> last++;
-		if (ft -> last == MAX_FILES) { ft -> last = 0; }
-
-		cntr++;
-		if (cntr >= MAX_FILES) { *err = EMFILE; }
-
+	result = vfs_open(filename, flags, mode, &vn);
+	if (result) {
+		return result;
 	}
 
-	ft -> handles[ft -> last] = file;
-	ft -> handles[ft -> last] -> refs++;
+	file = kmalloc(sizeof(struct openfile));
+	if (file == NULL) {
+		vfs_close(vn);
+		return ENOMEM;
+	}
 
-	lock_release(ft -> lock);
+	/* initialize the file struct */
+	file->lock = lock_create("of_lock");
+	if (file->lock == NULL) {
+		vfs_close(vn);
+		kfree(file);
+		return ENOMEM;
+	}
 
-        return (ft -> last);
+	/* checks for invalid access modes */
+	//KASSERT(flags==O_RDONLY || flags==O_WRONLY || flags==O_RDWR || flags==O_APPEND);
+
+	result = VOP_STAT(vn, &info); //Thanks to it I can take the information on the size
+
+	if ( result ) {
+		return result;
+	}
+
+	if ( file->mode==O_APPEND ) {
+		file->offset = info.st_size;	//check if +1 is required
+		file->mode = flags;
+		//kprintf("Append\n");
+	} else {
+		file->offset = 0;
+		file->mode = flags & O_ACCMODE;	//ACCMODE is a mask only for RDONLY, WRONLY and RDWR, so APPEND is not maintained
+		//kprintf("Not append\n");
+	}
+
+	file->f_cwd = vn;
+	file->reference_count = 1;
+
+    /* place the file in the filetable, getting the file descriptor */
+	result = filetable_placefile(file, retfd, ft);
+	if (result) {
+		lock_destroy(file->lock);
+		kfree(file);
+		vfs_close(vn);
+		return result;
+	}
+
+	return 0;
+}
+
+int filetable_placefile(struct openfile *of, int *fd, struct filetable *ft) {
+	lock_acquire(ft->ft_lock);	//it doesn't return nothing, so the error isn't checked.
+
+    for( int i = 0; i < __OPEN_MAX; i++ ) {
+        if ( ft->op_ptr[i] == NULL ) {
+            ft->op_ptr[i] = of;
+			if(fd != NULL)
+            	*fd = i;
+			lock_release(ft->ft_lock);
+            return 0;
+        }
+    }
+	lock_release(ft->ft_lock);
+    return EMFILE; //Too many open files
 
 }
 
-int
-ft_remove (struct filetable *ft, unsigned int fd)
-{
 
-        openfile *file = NULL;
 
-        KASSERT(ft != NULL);
-	KASSERT(fd < MAX_FILES);
+int findFD ( int fd, struct openfile **of ) {
 
-	lock_acquire(ft -> lock);
+    struct filetable *ft = curproc->p_filetable; //probably curproc
 
-        file = ft -> handles[fd];
-	if (file != NULL) {
-		file -> refs -= 1;
-	        if (file -> refs == 0) {
-	                vfs_close(file -> vn);
-	                kfree(file);
+    if ( fd < 0 || fd >= __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
+        return EBADF; //Bad file descriptor
+    }
+	/* if (ft->op_ptr[fd] == NULL)
+		kprintf("No open file associated to %d", fd);
+		return EBADF; */
+		
+	*of = ft->op_ptr[fd]; //associate the openfile structure to the one pointed by
+                            //the file descriptor in the System File Table
+	//kprintf("findFD %d %d\n", fd, (int)*of);
+    return 0;
+}
+
+int closeOpenFile ( struct openfile *of ) {
+	lock_acquire(of->lock);
+    if ( of->reference_count == 1 ) { //If this is the last opening of the file, we can 
+                                      //destroy the openfile structure by the System File Table
+        vfs_close(of->f_cwd);
+		lock_release(of->lock);
+		lock_destroy(of->lock);
+		kfree(of);
+        //free also memory if we use kmalloc with kfree(file)
+    } else { //if it is not, we can only decrease the reference count, controlling the PANIC
+             //with KASSERT
+        KASSERT(of->reference_count > 1);
+        of->reference_count--;
+		lock_release(of->lock);
+    }
+
+    return 0;
+}
+
+void filetable_destroy(struct filetable * ft){
+	lock_acquire(ft->ft_lock);
+	for(int fd = 0; fd < __OPEN_MAX; fd++){
+		if(ft->op_ptr[fd] != NULL){
+			closeOpenFile(ft->op_ptr[fd]);
 		}
-		ft -> handles[fd] = NULL;
-		if (fd < ft -> last) { ft -> last = fd; }
 	}
-	else { lock_release(ft -> lock); return EBADF; }
-
-	lock_release(ft -> lock);
-        
-        return (0);
-
+	lock_release(ft->ft_lock);
+	lock_destroy(ft->ft_lock);
 }
 
-openfile *
-ft_get (struct filetable *ft, unsigned int fd)
-{
-
-	openfile *temp = NULL;
-
-	KASSERT(ft != NULL);
-	KASSERT(fd < MAX_FILES);
-
-	if (ft -> handles[0] == NULL) { ft_init(ft); }
-
-	lock_acquire(ft -> lock);
-	temp = ft -> handles[fd];
-	lock_release(ft -> lock);
-	return (temp);
-
-}
-
-int
-ft_set (struct filetable *ft, unsigned int fd, openfile *file)
-{
-
-	KASSERT(ft != NULL);
-	KASSERT(fd < MAX_FILES);
-
-	if (ft -> handles[0] == NULL) { ft_init(ft); }
-
-	lock_acquire(ft -> lock);
-        ft -> handles[fd] = file;
-	lock_release(ft -> lock);
-
-	return (0);	
-
-}
-
-int
-ft_copy (struct filetable *copyfrom, struct filetable *copyto)
-{
+void filetable_copy(struct filetable * new_ft){
+	lock_acquire(curproc->p_filetable->ft_lock);
+	memcpy(new_ft, curproc->p_filetable, sizeof(struct filetable));
 	
-        int i;
-
-        KASSERT(copyfrom != NULL);
-        KASSERT(copyto != NULL);
-
-	lock_acquire(copyfrom -> lock);
-
-        for (i = 0; i < MAX_FILES; i++) {
-		if (copyfrom -> handles[i] != NULL) {
-			ft_add(copyto, copyfrom -> handles[i], 1, NULL);
-			copyto -> handles[i] -> refs++;
-		}
-        }
-	copyto -> last = copyfrom -> last;
-
-	lock_release(copyfrom -> lock);
-
-	return (0);
-
+	//reference_count is used only in case of multiple threads under the same proc, since our filetable is contained in the process itself (so do the openfiles)
+	for(int fd=0; fd<__OPEN_MAX; fd++){
+		if(curproc->p_filetable->op_ptr[fd] != NULL)
+			new_ft->op_ptr[fd]->reference_count++;
+	}	
+	lock_release(curproc->p_filetable->ft_lock);
 }
-
-
-int
-ft_destroy (struct filetable *ft)
-{
-
-	int i;
-
-        KASSERT(ft != NULL);
-
-	for (i = 0; i < MAX_FILES; i++) {
-		ft_remove(ft, i);
-        }
-
-	lock_destroy(ft -> lock);
-
-        kfree(ft);
-
-	return (0);
-
 }
