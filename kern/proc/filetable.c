@@ -9,14 +9,14 @@
 #include <vnode.h>
 #include <synch.h>
 
-filetable *
+struct filetable *
 ft_create (void)
 {
 
 	int i;
-        filetable *ft = NULL;
+        struct filetable *ft = NULL;
 
-        ft = (filetable *)kmalloc(sizeof(filetable));
+        ft = (struct filetable *)kmalloc(sizeof(struct filetable));
         KASSERT(ft != NULL);
 
 	for (i = 0; i < MAX_FILES; i++) {
@@ -31,7 +31,7 @@ ft_create (void)
 }
 
 int
-ft_init (filetable *ft)
+ft_init (struct filetable *ft)
 {
 
         struct vnode *v = NULL;
@@ -108,7 +108,7 @@ ft_init (filetable *ft)
 }
 
 int
-ft_add (filetable *ft, openfile *file, int init, int *err)
+ft_add (struct filetable *ft, openfile *file, int init, int *err)
 {
 
 	unsigned int cntr;
@@ -141,7 +141,7 @@ ft_add (filetable *ft, openfile *file, int init, int *err)
 }
 
 int
-ft_remove (filetable *ft, unsigned int fd)
+ft_remove (struct filetable *ft, unsigned int fd)
 {
 
         openfile *file = NULL;
@@ -170,7 +170,7 @@ ft_remove (filetable *ft, unsigned int fd)
 }
 
 openfile *
-ft_get (filetable *ft, unsigned int fd)
+ft_get (struct filetable *ft, unsigned int fd)
 {
 
 	openfile *temp = NULL;
@@ -188,7 +188,7 @@ ft_get (filetable *ft, unsigned int fd)
 }
 
 int
-ft_set (filetable *ft, unsigned int fd, openfile *file)
+ft_set (struct filetable *ft, unsigned int fd, openfile *file)
 {
 
 	KASSERT(ft != NULL);
@@ -205,7 +205,7 @@ ft_set (filetable *ft, unsigned int fd, openfile *file)
 }
 
 int
-ft_copy (filetable *copyfrom, filetable *copyto)
+ft_copy (struct filetable *copyfrom, struct filetable *copyto)
 {
 	
         int i;
@@ -231,7 +231,7 @@ ft_copy (filetable *copyfrom, filetable *copyto)
 
 
 int
-ft_destroy (filetable *ft)
+ft_destroy (struct filetable *ft)
 {
 
 	int i;

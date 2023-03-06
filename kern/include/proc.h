@@ -71,7 +71,7 @@ struct proc {
 	/* VFS */
 	struct vnode *p_cwd;		/* current working directory */
 
-	filetable *files; 			/* files table */
+	struct filetable *files; 			/* files table */
 
 	/* add more material here as needed */
 };

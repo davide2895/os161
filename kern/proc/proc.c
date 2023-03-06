@@ -84,7 +84,7 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	/* File table fields*/
-	filetable *ft;
+	struct filetable *ft;
 	ft = ft_create();
 	if (ft_init (ft) != 0) {
 		panic("ft_init for kproc failed\n");
