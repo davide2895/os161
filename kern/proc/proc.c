@@ -48,12 +48,15 @@
 #include <current.h>
 #include <addrspace.h>
 #include <vnode.h>
-#include <filetable.h>
+#include <file.h>
+#include <pid.h>
+#include <synch.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
  */
 struct proc *kproc;
+struct processtable *pt;
 
 /*
  * Create a proc structure.
@@ -63,7 +66,10 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
+	bool is_kproc;
 
+	is_kproc = (strcmp(name, "[kernel]") == 0);
+	
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
 		return NULL;
@@ -74,6 +80,25 @@ proc_create(const char *name)
 		return NULL;
 	}
 
+	proc->p_sem = sem_create(name, 0);
+	if ( proc->p_sem == NULL ) {
+		kfree(proc->p_name);
+		kfree(proc);
+		return NULL;
+	}
+
+	proc->p_pidinfo = pid_init(is_kproc);
+	if ( proc->p_pidinfo == NULL ) {
+		kfree(proc->p_name);
+		sem_destroy(proc->p_sem);
+		kfree(proc);
+		return NULL;
+	}
+	
+	spinlock_acquire(&pt->pt_lock);
+	pt->proc_ptr[proc->p_pidinfo->current_pid] = proc;
+	spinlock_release(&pt->pt_lock);
+
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
 
@@ -83,13 +108,11 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
-	/* File table fields*/
-	struct filetable *ft;
-	ft = ft_create();
-	if (ft_init (ft) != 0) {
-		panic("ft_init for kproc failed\n");
+	/* file items field */
+	if (!is_kproc){	//Each new process initializes its own ft
+		proc->p_filetable = filetable_init();
+		//ft_STD_init();
 	}
-	kproc->files = ft;
 
 	return proc;
 }
@@ -175,6 +198,11 @@ proc_destroy(struct proc *proc)
 	}
 
 	KASSERT(proc->p_numthreads == 0);
+
+	filetable_destroy(proc->p_filetable);
+	processtable_remproc(proc->p_pidinfo->current_pid);
+	pid_destroy(proc->p_pidinfo);
+	sem_destroy(proc->p_sem);
 	spinlock_cleanup(&proc->p_lock);
 
 	kfree(proc->p_name);
@@ -187,10 +215,13 @@ proc_destroy(struct proc *proc)
 void
 proc_bootstrap(void)
 {
+	pt = proctable_init();	//this is executed only one time for the kernel
 	kproc = proc_create("[kernel]");
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");
 	}
+
+	
 }
 
 /*

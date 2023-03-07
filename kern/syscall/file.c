@@ -212,4 +212,4 @@ void filetable_copy(struct filetable * new_ft){
 	}	
 	lock_release(curproc->p_filetable->ft_lock);
 }
-}
+

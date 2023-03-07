@@ -37,11 +37,12 @@
  */
 
 #include <spinlock.h>
-#include <filetable.h>
 
 struct addrspace;
 struct thread;
 struct vnode;
+struct filetable_entry; //for the same discussion above
+struct semaphore;
 
 /*
  * Process structure.
@@ -64,6 +65,7 @@ struct proc {
 	char *p_name;			/* Name of this process */
 	struct spinlock p_lock;		/* Lock for this structure */
 	unsigned p_numthreads;		/* Number of threads in this process */
+	struct semaphore *p_sem;		/* Semaphore used for waitpid/exit system calls */
 
 	/* VM */
 	struct addrspace *p_addrspace;	/* virtual address space */
@@ -71,9 +73,10 @@ struct proc {
 	/* VFS */
 	struct vnode *p_cwd;		/* current working directory */
 
-	struct filetable *files; 			/* files table */
-
 	/* add more material here as needed */
+	struct filetable * p_filetable;
+		//added
+	struct pid *p_pidinfo;
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */

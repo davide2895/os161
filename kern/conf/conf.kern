@@ -333,7 +333,6 @@ optfile   hangman thread/hangman.c
 # Process system
 #
 
-file      proc/filetable.c
 file      proc/proc.c
 
 #
