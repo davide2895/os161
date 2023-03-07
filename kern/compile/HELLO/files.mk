@@ -85,7 +85,6 @@ SRCS.MACHINE.mips+=$(TOP)/common/gcc-millicode/umoddi3.c
 SRCS.MACHINE.mips+=$(TOP)/common/gcc-millicode/xordi3.c
 SRCS.MACHINE.mips+=$(TOP)/common/libc/arch/mips/setjmp.S
 SRCS.MACHINE.mips+=$(KTOP)/vm/copyinout.c
-SRCS+=$(KTOP)/proc/filetable.c
 SRCS+=$(KTOP)/proc/proc.c
 SRCS.PLATFORM.sys161+=$(KTOP)/arch/mips/locore/cache-mips161.S
 SRCS.PLATFORM.sys161+=$(KTOP)/arch/mips/locore/exception-mips1.S
