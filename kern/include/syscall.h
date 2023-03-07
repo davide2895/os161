@@ -32,6 +32,7 @@
 
 
 #include <cdefs.h> /* for __DEAD */
+#include <types.h>
 struct trapframe; /* from <machine/trapframe.h> */
 
 /*
@@ -45,7 +46,7 @@ void syscall(struct trapframe *tf);
  */
 
 /* Helper for fork(). You write this. */
-void enter_forked_process(struct trapframe *tf);
+void enter_forked_process(void *tf, unsigned long junk);
 
 /* Enter user mode. Does not return. */
 __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
@@ -58,5 +59,26 @@ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 
 int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
+
+/* Process system calls */
+/*
+int sys_getpid( pid_t* ); //I don't know very well what to define
+void sys__exit( int );
+int sys_fork( struct trapframe * , pid_t* ); //I don't know very well what to define
+int sys_execv( char *, char **);
+int loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr);
+int sys_waitpid( pid_t, userptr_t, int, pid_t* );
+
+/* I/O system calls */
+
+int sys_open( userptr_t, int, int, int* ); //maybe I can delete the ... here and in unistd.h in user
+int sys_read( int, userptr_t, size_t, int* );
+int sys_write( int, userptr_t, size_t, int* );
+int sys_lseek( int, off_t, int, int* , int*);
+int sys_close( int );
+int sys_dup2( int, int, int *);
+int sys_chdir( userptr_t );
+int sys__getcwd( userptr_t, size_t, int* );
+
 
 #endif /* _SYSCALL_H_ */
