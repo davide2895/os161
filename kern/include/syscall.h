@@ -48,6 +48,8 @@ void syscall(struct trapframe *tf);
 /* Helper for fork(). You write this. */
 void enter_forked_process(struct trapframe *tf);
 
+void efp_mips_thread(void *data1, unsigned long data2);
+
 /* Enter user mode. Does not return. */
 __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 		       vaddr_t stackptr, vaddr_t entrypoint);
@@ -61,14 +63,14 @@ int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 
 /* Process system calls */
-/*
+
 int sys_getpid( pid_t* ); //I don't know very well what to define
 void sys__exit( int );
 int sys_fork( struct trapframe * , pid_t* ); //I don't know very well what to define
 int sys_execv( char *, char **);
 int loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr);
 int sys_waitpid( pid_t, userptr_t, int, pid_t* );
-*/
+
 /* I/O system calls */
 
 int sys_open( userptr_t, int, int, int* ); //maybe I can delete the ... here and in unistd.h in user
