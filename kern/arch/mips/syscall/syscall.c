@@ -80,7 +80,9 @@ syscall(struct trapframe *tf)
 {
 	int callno;
 	int32_t retval;
-	int err;
+	int err=0; //Initialized to 0 because bmake requests it
+	int32_t retval1; //needed for the sys_lseek
+	off_t pos;
 
 	KASSERT(curthread != NULL);
 	KASSERT(curthread->t_curspl == 0);
@@ -110,6 +112,62 @@ syscall(struct trapframe *tf)
 		break;
 
 	    /* Add stuff here */
+	    
+	        case SYS_close:
+		err = sys_close( tf->tf_a0 );
+		break;
+
+		case SYS_open:
+		err = sys_open( (userptr_t)tf->tf_a0, tf->tf_a1, tf->tf_a2, &retval );
+		break;
+
+		case SYS_read:
+		err = sys_read( tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &retval );
+		break;
+
+		case SYS_write:
+		err = sys_write( tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &retval );
+		break;
+
+		case SYS_lseek:
+		pos = tf->tf_a2;
+		pos <<= 32;
+		pos |= tf->tf_a3;
+		err = sys_lseek((int)tf->tf_a0, pos, *(int32_t *)(tf->tf_sp+16), &retval, &retval1);
+		//err = sys_lseek( tf->tf_a0, tf->tf_a1, tf->tf_a2, &retval );
+		break;
+
+		case SYS_dup2:
+		err = sys_dup2( tf->tf_a0, tf->tf_a1, &retval);
+		break;
+
+		case SYS_chdir:
+		err = sys_chdir( (userptr_t)tf->tf_a0 );
+		break;
+
+		case SYS___getcwd:
+		err = sys__getcwd( (userptr_t)tf->tf_a0, tf->tf_a1, &retval );
+		break;
+
+		case SYS__exit:
+		sys__exit( tf->tf_a0 );
+		break;
+
+		case SYS_fork:
+		err = sys_fork( tf, &retval );
+		break;
+
+		case SYS_getpid:
+		err = sys_getpid( &retval );
+		break;
+
+		case SYS_waitpid:
+		err = sys_waitpid( tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &retval );
+		break;
+
+		case SYS_execv:
+		err = sys_execv( (char *)tf->tf_a0, (char **)tf->tf_a1 );
+		break;
 
 	    default:
 		kprintf("Unknown syscall %d\n", callno);
