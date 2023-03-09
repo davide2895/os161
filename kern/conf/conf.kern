@@ -381,6 +381,7 @@ file      syscall/runprogram.c
 file      syscall/time_syscalls.c
 file      syscall/file.c
 file      syscall/file_syscall.c
+file      syscall/pid.c
 
 #
 # Startup and initialization

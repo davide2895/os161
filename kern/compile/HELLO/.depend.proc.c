@@ -9,4 +9,4 @@ proc.o: ../../proc/proc.c ../../include/types.h \
  ../../include/setjmp.h includelinks/kern/machine/setjmp.h \
  ../../include/addrspace.h ../../include/vm.h includelinks/machine/vm.h \
  opt-dumbvm.h ../../include/vnode.h ../../include/file.h \
- ../../include/kern/limits.h ../../include/synch.h
+ ../../include/kern/limits.h ../../include/pid.h ../../include/synch.h
