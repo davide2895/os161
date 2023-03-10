@@ -35,6 +35,8 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
+#include <addrspace.h>
+
 
 
 /*
@@ -113,7 +115,7 @@ syscall(struct trapframe *tf)
 
 	    /* Add stuff here */
 	    
-	        case SYS_close:
+	    case SYS_close:
 		err = sys_close( tf->tf_a0 );
 		break;
 
@@ -202,6 +204,18 @@ syscall(struct trapframe *tf)
 	KASSERT(curthread->t_curspl == 0);
 	/* ...or leak any spinlocks */
 	KASSERT(curthread->t_iplhigh_count == 0);
+}
+
+void
+enter_forked_process(struct trapframe *tf){
+
+	void *temp = (void *) curthread->t_stack + 16;
+
+	memcpy(temp, (const void *) tf, sizeof(struct trapframe));
+	kfree((struct trapframe *) tf);
+	
+	as_activate();
+	mips_usermode((struct trapframe *)temp);
 }
 
 

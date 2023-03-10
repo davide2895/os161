@@ -18,19 +18,6 @@
 #include <vnode.h>
 #include <kern/wait.h>
 
-void
-enter_forked_process(struct trapframe *tf){
-
-	
-	void *temp = (void *) curthread->t_stack + 16;
-
-	memcpy(temp, (const void *) tf, sizeof(struct trapframe));
-	kfree((struct trapframe *) tf);
-	
-	as_activate();
-	mips_usermode((struct trapframe *)temp);
-}
-
 //intermediate enter_forked_process function 
 void
 efp_mips_thread(void *data1, unsigned long data2){
@@ -285,8 +272,6 @@ void sys__exit( int status ) {
     struct proc *p = curproc;
     curproc->p_pidinfo->exit_status = _MKWAIT_EXIT(status);
     curproc->p_pidinfo->exit = true;
-	
-	proc_remthread(curthread);
     
     V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
 	//kprintf("sem value: %d\n", (unsigned int)curproc->p_sem->sem_count);
