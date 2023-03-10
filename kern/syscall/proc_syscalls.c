@@ -272,6 +272,7 @@ void sys__exit( int status ) {
     struct proc *p = curproc;
     curproc->p_pidinfo->exit_status = _MKWAIT_EXIT(status);
     curproc->p_pidinfo->exit = true;
+	as_destroy(curproc->p_addrspace);
     
     V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
 	//kprintf("sem value: %d\n", (unsigned int)curproc->p_sem->sem_count);
