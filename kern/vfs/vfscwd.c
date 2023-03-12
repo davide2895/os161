@@ -174,11 +174,11 @@ vfs_getcwd(struct uio *uio)
 	if (result) {
 		goto out;
 	}
-
-	result = VOP_NAMEFILE(cwd, uio);
+	result = VOP_NAMEFILE(cwd, uio);	//returns 1 in user process
 
  out:
 
+	//kprintf("kprintf: %d\n",result);
 	VOP_DECREF(cwd);
 	return result;
 }

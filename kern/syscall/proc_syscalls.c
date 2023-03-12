@@ -275,8 +275,8 @@ void sys__exit( int status ) {
 	proc_remthread(curthread);
     V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
 	//kprintf("sem value: %d\n", (unsigned int)curproc->p_sem->sem_count);
-	as_destroy(curproc->p_addrspace);
 	thread_exit();
+	as_destroy(curproc->p_addrspace);
 }
 
 int sys_getpid( pid_t *retval )

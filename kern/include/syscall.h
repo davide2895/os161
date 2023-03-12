@@ -79,8 +79,8 @@ int sys_write( int, userptr_t, size_t, int* );
 int sys_lseek( int, off_t, int, int* , int*);
 int sys_close( int );
 int sys_dup2( int, int, int *);
-int sys_chdir( userptr_t );
-int sys__getcwd( userptr_t, size_t, int* );
+int sys_chdir(const char *pathname, int32_t *retval);
+int sys__getcwd( char *buf, size_t buflen, int32_t *retval );
 
 
 #endif /* _SYSCALL_H_ */

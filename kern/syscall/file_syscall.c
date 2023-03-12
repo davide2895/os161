@@ -56,46 +56,70 @@ int sys_close( int fd ) {
     return 0;
 }
 
-int sys__getcwd( userptr_t buf, size_t len, int* retval ) {
-
+int
+sys__getcwd(char *buf, size_t buflen, int32_t *retval)
+{
     struct iovec iov;
     struct uio myuio;
-    int ret;
-    //Initialize a uio suitable for I/O from a kernel buffer.
-    uio_uinit( &iov, &myuio, (void *)buf, len, 0, UIO_READ );
+    int result;
 
-    ret = vfs_getcwd( &myuio ); //It allows to get the current directory
-    kprintf("pwd: %s\n", (char *)buf);
+    *retval = -1;
 
-    if ( ret ) {
-        return ret;
-    }
+    if (buf == NULL)
+        return EFAULT;
 
-    //Here we can set retval to the amount read. In the uio struct there is a data that
-    //take into account the residual amount of data to transfer. Thanks to it, we can obtain
-    //the effective data read (and we can return it with retval). (The same as for the read).
+    uio_uinit( &iov, &myuio, (void *)buf, buflen, 0, UIO_READ );
 
-    *retval = len - myuio.uio_resid;
 
+    result = vfs_getcwd( &myuio );
+    if (result)
+        return result;
+
+    *retval = buflen - myuio.uio_offset;
     return 0;
 }
 
-int sys_chdir( userptr_t pathname ) {
+int
+sys_chdir(const char *pathname, int32_t *retval) {
 
-    char path[__PATH_MAX+1];
-    int ret;
+    char *path;
+    int result;
+    size_t len;
 
-    ret = copyinstr(pathname, path, (__PATH_MAX+1), NULL);
-    if ( ret ) {
-        return ret;
-    }
+    KASSERT (curproc != NULL);
 
-    ret = vfs_chdir( path );
-    if ( ret ) {
-        return ret;
-    }
+    *retval = -1;
 
+    // if (pathname == NULL)
+    //     return EFAULT;
+
+     if (pathname == NULL)     //|| (!as_is_addr_valid(curproc->p_addrspace, (vaddr_t) pathname))
+        return EFAULT;
+    // result = check_userptr((const_userptr_t) pathname);
+    // if (result)
+    //     return result;
+
+    len = strlen(pathname) + 1;
+
+    path = kmalloc(len);
+    if (path == NULL)
+        return ENOMEM;
+
+    result = copyinstr((const_userptr_t)pathname, path, len, NULL);
+    if (result)
+        goto err;
+
+    result = vfs_chdir(path);
+    if (result)
+        goto err;
+
+    *retval = 0;
     return 0;
+
+err:
+    kfree(path);
+    return result;
+
 }
 
 int sys_dup2( int oldfd, int newfd, int *outfd ) {
