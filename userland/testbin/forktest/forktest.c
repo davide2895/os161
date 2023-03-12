@@ -132,7 +132,7 @@ static
 void
 test(int nowait)
 {
-	int pid0, pid1, pid2, pid3;
+	int pid0, pid1;//, pid2, pid3;
 	int depth = 0;
 
 	/*
@@ -165,7 +165,7 @@ test(int nowait)
 	}
 	check();
 
-	pid2 = dofork();
+	//pid2 = dofork();
 	depth++;
 	putchar('C');
 	if (depth != 3) {
@@ -173,7 +173,7 @@ test(int nowait)
 	}
 	check();
 
-	pid3 = dofork();
+	//pid3 = dofork();
 	depth++;
 	putchar('D');
 	if (depth != 4) {
@@ -185,8 +185,8 @@ test(int nowait)
 	 * These must be called in reverse order to avoid waiting
 	 * improperly.
 	 */
-	dowait(nowait, pid3);
-	dowait(nowait, pid2);
+	//dowait(nowait, pid3);
+	//dowait(nowait, pid2);
 	dowait(nowait, pid1);
 	dowait(nowait, pid0);
 

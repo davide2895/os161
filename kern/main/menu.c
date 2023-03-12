@@ -45,6 +45,7 @@
 #include <test.h>
 #include "opt-sfs.h"
 #include "opt-net.h"
+#include <pid.h>
 
 /*
  * In-kernel menu and command dispatcher.
@@ -138,7 +139,7 @@ common_prog(int nargs, char **args)
 	 * once you write the code for handling that.
 	 */
 	
-	//sys_waitpid(proc->p_pidinfo->current_pid, NULL, 0, NULL);
+	sys_waitpid(proc->p_pidinfo->current_pid, NULL, 0, NULL);
 	return 0;
 }
 
