@@ -70,7 +70,6 @@ sys__getcwd(char *buf, size_t buflen, int32_t *retval)
 
     uio_uinit( &iov, &myuio, (void *)buf, buflen, 0, UIO_READ );
 
-
     result = vfs_getcwd( &myuio );
     if (result)
         return result;
@@ -252,9 +251,7 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
 
     //Initialize a uio suitable for I/O from a kernel buffer.
 
-    uio_uinit(&iov, &myuio, buf, size, of->offset, UIO_READ); //Maybe here it is uio_uinit
-                                                              //I don't remember why i put
-                                                              //uio_kinit
+    uio_uinit(&iov, &myuio, buf, size, of->offset, UIO_READ);
 
     //VOP_READ is used to perform the effective read from the io
 
