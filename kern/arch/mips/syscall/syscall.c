@@ -102,6 +102,7 @@ syscall(struct trapframe *tf)
 	 */
 
 	retval = 0;
+	retval1 = 0;
 
 	switch (callno) {
 	    case SYS_reboot:

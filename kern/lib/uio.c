@@ -163,6 +163,8 @@ uio_kinit(struct iovec *iov, struct uio *u,
 	u->uio_space = NULL;
 }
 
+//uio_uinit( &iov, &myuio, buf, buflen, 0, UIO_READ );
+
 void
 uio_uinit(struct iovec *iov, struct uio *u,
 	  void *ubuf, size_t len, off_t pos, enum uio_rw rw)
@@ -175,6 +177,6 @@ uio_uinit(struct iovec *iov, struct uio *u,
 	u->uio_resid = len;
 	u->uio_segflg = UIO_USERSPACE;
 	u->uio_rw = rw;
-	//u->uio_space = curproc->t_addrspace; //or NULL
+	//u->uio_space = curproc->p_addrspace; //or NULL
 	u->uio_space = proc_getas();
 }

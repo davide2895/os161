@@ -324,7 +324,7 @@ void
 cmd_exit(int ac, char *av[], struct exitinfo *ei)
 {
 	int code;
-
+builtins
 	if (ac == 1) {
 		code = 0;
 	}
