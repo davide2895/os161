@@ -172,6 +172,18 @@ syscall(struct trapframe *tf)
 		err = sys_execv( (char *)tf->tf_a0, (char **)tf->tf_a1 );
 		break;
 
+		case SYS_remove:
+		err = sys_remove( (char *)tf->tf_a0, &retval );
+		break;
+
+		case SYS_rmdir:
+		err = sys_rmdir( (char *)tf->tf_a0, &retval );
+		break;
+
+		case SYS_mkdir:
+		err = sys_mkdir( (char *)tf->tf_a0, (mode_t)tf->tf_a1, &retval );
+		break;
+
 	    default:
 		kprintf("Unknown syscall %d\n", callno);
 		err = ENOSYS;

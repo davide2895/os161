@@ -81,6 +81,9 @@ int sys_close( int );
 int sys_dup2( int, int, int *);
 int sys_chdir(const char *pathname, int32_t *retval);
 int sys__getcwd( char *buf, size_t buflen, int32_t *retval );
+int sys_remove(char *pathname, int *retval);
+int sys_rmdir(char *pathname, int *retval);
+int sys_mkdir(char *pathname, mode_t mode, int *retval);
 
 
 #endif /* _SYSCALL_H_ */

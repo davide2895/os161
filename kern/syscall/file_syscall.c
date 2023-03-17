@@ -334,3 +334,25 @@ int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
 
     return 0;
 }
+
+int sys_remove(char *pathname, int *retval){
+    kprintf("Inside remove\n");
+    int ret;
+    ret = vfs_remove(pathname);
+    if(ret != 0) *retval = -1;
+    return ret;
+}
+int sys_rmdir(char *pathname, int *retval){
+    kprintf("Inside rmdir\n");
+    int ret;
+    ret = vfs_rmdir(pathname);
+    if(ret != 0) *retval = -1;
+    return ret;
+}
+int sys_mkdir(char *pathname, mode_t mode, int *retval){
+    kprintf("Inside mkdir\n");
+    int ret;
+    ret = vfs_mkdir(pathname, mode);
+    if(ret != 0) *retval = -1;
+    return ret;
+}

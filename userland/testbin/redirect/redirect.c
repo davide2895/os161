@@ -191,7 +191,7 @@ main(void)
 	chkfile();
 
 	printf("Passed.\n");
-	(void)remove(INFILE);
-	(void)remove(OUTFILE);
+	//(void)remove(INFILE);
+	//(void)remove(OUTFILE);
 	return 0;
 }
