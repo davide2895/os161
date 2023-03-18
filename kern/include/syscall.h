@@ -64,16 +64,17 @@ int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 
 /* Process system calls */
 
-int sys_getpid( pid_t* ); //I don't know very well what to define
+int sys_getpid( pid_t* );
 void sys__exit( int );
-int sys_fork( struct trapframe * , pid_t* ); //I don't know very well what to define
+int sys_fork( struct trapframe * , pid_t* ); 
 int sys_execv( char *, char **);
-int loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr);
 int sys_waitpid( pid_t, userptr_t, int, pid_t* );
+
+int loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr);
 
 /* I/O system calls */
 
-int sys_open( userptr_t, int, int, int* ); //maybe I can delete the ... here and in unistd.h in user
+int sys_open( userptr_t, int, int, int* );
 int sys_read( int, userptr_t, size_t, int* );
 int sys_write( int, userptr_t, size_t, int* );
 int sys_lseek( int, off_t, int, int* , int*);
@@ -81,6 +82,10 @@ int sys_close( int );
 int sys_dup2( int, int, int *);
 int sys_chdir(const char *pathname, int32_t *retval);
 int sys__getcwd( char *buf, size_t buflen, int32_t *retval );
+
+
+
+
 int sys_remove(char *pathname, int *retval);
 int sys_rmdir(char *pathname, int *retval);
 int sys_mkdir(char *pathname, mode_t mode, int *retval);

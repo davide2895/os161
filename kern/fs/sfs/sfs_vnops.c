@@ -402,11 +402,13 @@ sfs_remove(struct vnode *dir, const char *name)
 	result = sfs_lookonce(sv, name, &victim, &slot);
 	if (result) {
 		vfs_biglock_release();
+		//kprintf("lookonce return %d\n",result);
 		return result;
 	}
 
 	/* Erase its directory entry. */
 	result = sfs_dir_unlink(sv, slot);
+	//kprintf("dir_unlink ret %d\n",result);
 	if (result==0) {
 		/* If we succeeded, decrement the link count. */
 		KASSERT(victim->sv_i.sfi_linkcount > 0);

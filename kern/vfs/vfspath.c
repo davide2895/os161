@@ -147,7 +147,7 @@ vfs_remove(char *path)
 
 	result = VOP_REMOVE(dir, name);
 	VOP_DECREF(dir);
-
+	//kprintf("returnvalue %d\n",result);
 	return result;
 }
 
