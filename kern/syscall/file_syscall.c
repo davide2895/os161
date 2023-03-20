@@ -18,25 +18,21 @@ int sys_open(userptr_t filename, int flags, int mode, int* retval)
 {
     char path[__PATH_MAX]; //the path name has a max length given in kern/limits.h
     int ret;
-
-    ret = copyinstr(filename, path, __PATH_MAX, NULL); //The last is referred to the actual lenght of the string, if we have it. If not, we can put NULL here
+//The last is referred to the actual lenght of the string, if we have it. If not, we can put NULL here
+    ret = copyinstr(filename, path, __PATH_MAX, NULL);
     if ( ret ) {
-        return ret; //ENAMETOOLONG should be the return value from copyinstr
+        return ret; //possible ENAMETOOLONG
     }
-    
     ret = file_open(path, flags, mode, retval, curproc->p_filetable);
     if ( ret ) {
         return ret;
     }
-
     return 0;
 }
 
 int sys_close( int fd ) {
-
     struct openfile *of;
     int ret;
-
     ret = findFD(fd, &of);
     if ( ret ) {
         return ret;
@@ -44,15 +40,11 @@ int sys_close( int fd ) {
     if ( of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
         return EBADF;
     }
-
    ret = closeOpenFile(of);
-
    if ( ret ) {
         return ret;
    }
-
     curproc->p_filetable->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
-
     return 0;
 }
 
@@ -77,9 +69,7 @@ sys__getcwd(char *buf, size_t buflen, int32_t *retval)
 	// myuio.uio_resid = buflen;
 	// myuio.uio_segflg = UIO_USERSPACE;
 	// myuio.uio_rw = UIO_READ;
-	// //u->uio_space = curproc->p_addrspace; //or NULL
 	// myuio.uio_space = proc_getas();
-
     result = vfs_getcwd( &myuio );
     if (result)
         return result;

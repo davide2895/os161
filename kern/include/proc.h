@@ -75,7 +75,6 @@ struct proc {
 
 	/* add more material here as needed */
 	struct filetable * p_filetable;
-		//added
 	struct pid *p_pidinfo;
 };
 
