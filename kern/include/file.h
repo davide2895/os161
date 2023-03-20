@@ -48,22 +48,18 @@ struct lock;
  */
 
 struct openfile {
-
     struct vnode *f_cwd; /*current working directory*/
-
     mode_t mode; /*Read, Write, Read-Write ecc...*/
-
     off_t offset;
-
     unsigned int reference_count;
-
-    struct lock *lock;   //By using a lock, multiple processes can use the openfile structure one at time, without conflicts.
-
+    struct lock *lock;  //By using a lock, multiple processes can use 
+                        //the openfile structure one at time, without conflicts.
 };
 
 struct filetable {
     struct openfile *op_ptr[__OPEN_MAX];
-    struct lock *ft_lock;    //this locks the entire filetable, in case other threads try to operate concurrently.
+    struct lock *ft_lock;   //this locks the entire filetable, 
+                            //in case other threads try to operate concurrently.
 };
 
 struct filetable *filetable_init(void);
