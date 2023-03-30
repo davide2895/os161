@@ -274,7 +274,6 @@ void sys__exit( int status ) {
     curproc->p_pidinfo->exit = true;
 	proc_remthread(curthread);
     V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
-	//kprintf("sem value: %d\n", (unsigned int)curproc->p_sem->sem_count);
 	thread_exit();
 	as_destroy(curproc->p_addrspace);
 }
@@ -297,29 +296,18 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
     struct proc *p = proc_search_pid(pid);
     int p_status;
 	int result;
-
     if ( p == NULL ) {
         return ENOMEM;
     }
-
-	//if (status == NULL){
-	//	return EINVAL;
-	//}
-
 	if ( option != 0 ) {
 		return EINVAL;
 	}
-	
     p_status = proc_wait(p);
-	
     result = copyout((const void *) &p_status, status, sizeof(int));
     if (result) {
         return result;
     }
-
-	
 	//here something breaks the filetable (discovered from miniforktest)
-	
     *retval = pid;
     return 0;
 }

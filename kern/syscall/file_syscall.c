@@ -75,6 +75,7 @@ sys__getcwd(char *buf, size_t buflen, int32_t *retval)
         return result;
 
     *retval = buflen - myuio.uio_offset;
+    // Returns lenght of data read
     return 0;
 }
 
@@ -89,14 +90,8 @@ sys_chdir(const char *pathname, int32_t *retval) {
 
     *retval = -1;
 
-    // if (pathname == NULL)
-    //     return EFAULT;
-
-     if (pathname == NULL)     //|| (!as_is_addr_valid(curproc->p_addrspace, (vaddr_t) pathname))
+     if (pathname == NULL)
         return EFAULT;
-    // result = check_userptr((const_userptr_t) pathname);
-    // if (result)
-    //     return result;
 
     len = strlen(pathname) + 1;
 
@@ -131,17 +126,11 @@ int sys_dup2( int oldfd, int newfd, int *outfd ) {
     if ( ret ) {
         return ret;
     }
-    //if (of == NULL){
-    //    return EBADF;
-    //}
 
     ret = findFD( newfd, &temp_of);
     if ( ret ) {
         return ret;
     }
-    //if (temp_of == NULL){
-    //    return EBADF;
-    //}
     
     //If the file descriptors are the same, the dup2 finishes without errors
     if ( oldfd == newfd ) {
@@ -172,12 +161,10 @@ int sys_dup2( int oldfd, int newfd, int *outfd ) {
 }
 
 int sys_lseek( int fd, off_t offset, int whence, int *retval, int *retval1) {
-
     struct stat info;
     struct openfile *of;
     int ret;
     off_t seek;
-
     ret = findFD( fd, &of );
     if ( ret ) {
         return ret;
@@ -185,13 +172,9 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval, int *retval1) {
     if ( of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
         return EBADF;
     }
-
     lock_acquire(of->lock);
-
     //Depending on the type of seek, we need to set the retval to change the offset
-
     seek = of->offset; //default value
-
     switch( whence ) {
         case SEEK_SET: //Set the offset sent by the user
             seek = offset;
@@ -206,35 +189,25 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval, int *retval1) {
                 lock_release(of->lock);
                 return ret;
             }
-
             seek = info.st_size + offset;
             break;
         default: //whence is not valid
             lock_release(of->lock);
             return EINVAL;
     }
-
     //We can also put the error for a resulting negative offset (or beyond the end of a seekable device)
-
     of->offset = seek;
-    
     lock_release(of->lock);
-
-    *retval = seek >> 32;
-    *retval1 = seek & 0xFFFFFFFF;
-
+    *retval = seek >> 32;           /* most significant bits */
+    *retval1 = seek & 0xFFFFFFFF;   /* least significant bits */
     return 0;
 }
 
 int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
-
     struct openfile *of;
-
     struct iovec iov;
     struct uio myuio;
-
     int ret;
-
     ret = findFD(fd, &of);
     if ( ret ) {
         return ret;
@@ -242,51 +215,33 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
     if ( of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
         return EBADF;
     }
-
     lock_acquire(of->lock);
-
     if (of->mode == O_WRONLY){
         return EBADF;
     }
-
     //Initialize a uio suitable for I/O from a kernel buffer.
-
     uio_uinit(&iov, &myuio, buf, size, of->offset, UIO_READ);
-
     //VOP_READ is used to perform the effective read from the io
-
     ret = VOP_READ(of->f_cwd, &myuio);
-
     if ( ret ) {
         lock_release(of->lock);
         return ret;
     }
-
     //Now we replace the offset with the updated one in the uio
-
     of->offset = myuio.uio_offset;
-
     //Here we can set retval to the amount read. In the uio struct there is a data that
     //take into account the residual amount of data to transfer. Thanks to it, we can obtain
     //the effective data read (and we can return it with retval).
-
     lock_release(of->lock);
-
     *retval = size - myuio.uio_resid;
-
     return 0;
-
 }
 
 int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
-
     struct openfile *of;
-
     struct iovec iov;
     struct uio myuio;
-
     int ret;
-
     ret = findFD(fd, &of);  //now "of" contains the pointer to the openfile structure corresponding to fd
     if ( ret ) {
         return ret;
@@ -295,33 +250,23 @@ int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
         return EBADF;
     }
     lock_acquire(of->lock);
-    
     if (of->mode == O_RDONLY){
         return EBADF;
     }
-
     //Initialize a uio suitable for I/O from a kernel buffer.
-
     uio_uinit(&iov, &myuio, buf, size, of->offset, UIO_WRITE);
     ret = VOP_WRITE(of->f_cwd, &myuio);
-
     if ( ret ) {
         lock_release(of->lock);
         return ret;
     }
-
     //Now we replace the offset with the updated one in the uio
-
     of->offset = myuio.uio_offset;
-
     lock_release(of->lock);
-
     //Here we can set retval to the amount read. In the uio struct there is a data that
     //take into account the residual amount of data to transfer. Thanks to it, we can obtain
     //the effective data read (and we can return it with retval).
-
     *retval = size - myuio.uio_resid;;
-
     return 0;
 }
 
